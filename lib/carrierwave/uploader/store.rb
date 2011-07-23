@@ -58,8 +58,27 @@ module CarrierWave
           with_callbacks(:store, new_file) do
             new_file = storage.store!(@file)
             @file.delete if delete_tmp_file_after_storage
+            delete_cache_id
             @file = new_file
             @cache_id = nil
+          end
+        end
+      end
+
+      ##
+      # Deletes a cache id (tmp dir in cache)
+      #
+      def delete_cache_id
+        if @cache_id
+          path = File.expand_path(File.join(cache_dir, @cache_id), CarrierWave.root)
+          begin
+            Dir.rmdir(path)
+          rescue Errno::ENOENT
+            # Ignore: path does not exist
+          rescue Errno::ENOTDIR
+            # Ignore: path is not a dir
+          rescue Errno::ENOTEMPTY, Errno::EEXIST
+            # Ignore: dir is not empty
           end
         end
       end
