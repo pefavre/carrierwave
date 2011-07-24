@@ -17,6 +17,7 @@ class TestMigration < ActiveRecord::Migration
   def self.up
     create_table :events, :force => true do |t|
       t.column :image, :string
+      t.column :avatar, :string
       t.column :textfile, :string
       t.column :foo, :string
     end
@@ -48,7 +49,9 @@ describe CarrierWave::ActiveRecord do
       Object.const_set("Event#{$arclass}", @class)
       @class.table_name = "events"
       @uploader = Class.new(CarrierWave::Uploader::Base)
+      @another_uploader = Class.new(CarrierWave::Uploader::Base)
       @class.mount_uploader(:image, @uploader)
+      @class.mount_uploader(:avatar, @another_uploader)
       @event = @class.new
     end
 
@@ -79,12 +82,28 @@ describe CarrierWave::ActiveRecord do
         @event.image.current_path.should == public_path('uploads/test.jpeg')
       end
 
-      it "should return valid XML when to_xml is called on the object" do
-        @event.to_xml.should_not raise_error
+      it "should return valid XML that skips uploaders when to_xml is called on the object" do
+        #@event.to_xml.should == "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<event#{$arclass}>\n  <id type=\"integer\" nil=\"true\"></id>\n  <textfile nil=\"true\"></textfile>\n  <foo nil=\"true\"></foo>\n</event5>\n"
+        @event[:image] = 'test.jpeg'
+        @event.save
+        @event.reload
+        @event.to_xml.should == "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<event#{$arclass}>\n  <id type=\"integer\">#{@event.id}</id>\n  <textfile nil=\"true\"></textfile>\n  <foo nil=\"true\"></foo>\n</event5>\n"
       end
 
-      it "should return valid JSON when as_json is called on the object" do
-        @event.as_json.should_not raise_error
+      it "should return a JSON hash that skips uploaders when as_json is called on the object" do
+        @event.as_json.should == {"event#{$arclass}"=>{"foo"=>nil, "id"=>nil, "textfile"=>nil}}
+        @event[:image] = 'test.jpeg'
+        @event.save
+        @event.reload
+        @event.as_json.should == {"event#{$arclass}"=>{"foo"=>nil, "id"=>@event.id, "textfile"=>nil}}
+      end
+
+      it "should return valid JSON that skips uploaders when to_json is called on the object" do
+        @event.to_json.should == %({"event#{$arclass}":{\"foo\":null,\"id\":null,\"textfile\":null}})
+        @event[:image] = 'test.jpeg'
+        @event.save
+        @event.reload
+        @event.to_json.should == %({"event#{$arclass}":{\"foo\":null,\"id\":#{@event.id},\"textfile\":null}})
       end
 
     end

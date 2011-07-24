@@ -36,6 +36,18 @@ module CarrierWave
           send(:"\#{column}_will_change!")
           super
         end
+
+        # Disable the uploader columns in XML/JSON serialization by default
+        def serializable_hash(options = nil)
+          options = { :except => self.class.uploaders.keys }.merge(options || {})
+          super(options)
+        end
+
+        def to_xml(options = {})
+          options = { :except => self.class.uploaders.keys }.merge(options || {})
+          super(options)
+        end
+
       RUBY
 
     end
