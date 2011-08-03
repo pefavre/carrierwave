@@ -127,7 +127,7 @@ module CarrierWave
           if cnamed?
             ["#{scheme}://#{bucket}", path].compact.join('/')
           else
-            ["#{scheme}://#{bucket}.s3.amazonaws.com", path].compact.join('/')
+            ["#{scheme}://s3.amazonaws.com/#{bucket}", path].compact.join('/')
           end
         end
 
